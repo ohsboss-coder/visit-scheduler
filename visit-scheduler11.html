@@ -120,6 +120,7 @@ body{background:#0d1117;color:#e6edf3;font-family:-apple-system,sans-serif;font-
     </div>
     <button class="btn bb" id="exbtn" type="button">📥 엑셀 다운로드</button>
   </div>
+  <div id="fl2" style="background:#ff000015;border:1px solid #f8514966;border-radius:10px;padding:14px;margin-bottom:12px;display:none"></div>
   <div class="dn" id="dn"></div>
   <div class="dtl">
     <div class="dh" id="dh"></div>
@@ -133,7 +134,7 @@ var SPEED=50,VMIN=60,LMIN=60,LS=720,DS=540,DE=1080;
 var SD=new Date(2026,4,4);
 var HOL={"2026-01-01":1,"2026-01-28":1,"2026-01-29":1,"2026-01-30":1,"2026-03-01":1,"2026-05-05":1,"2026-05-25":1,"2026-06-06":1,"2026-08-15":1,"2026-09-24":1,"2026-09-25":1,"2026-09-26":1,"2026-10-03":1,"2026-10-09":1,"2026-12-25":1};
 var WD=["일","월","화","수","목","금","토"];
-var raw=[],sched=[],sidx=0,sLat=35.8,sLng=127.1,sAdr="",fails=0;
+var raw=[],sched=[],sidx=0,sLat=35.8,sLng=127.1,sAdr="",fails=0,failList=[];
 
 function isWD(d){var w=d.getDay();return w!==0&&w!==6&&!HOL[d.toISOString().slice(0,10)];}
 function nWD(d){var n=new Date(d);n.setDate(n.getDate()+1);while(!isWD(n))n.setDate(n.getDate()+1);return n;}
@@ -250,7 +251,7 @@ g("stbtn").addEventListener("click",async function(){
   if(!sAdr){se("e2","출발지 주소를 입력하세요.");return;}
   he("e2");hide("s2");show("s3");
   var total=raw.length+1,done=0;
-  fails=0;var t0=Date.now();
+  fails=0;failList=[];var t0=Date.now();
   g("fl").innerHTML="";
 
   function up(){
@@ -274,6 +275,7 @@ g("stbtn").addEventListener("click",async function(){
     }else{
       geo.push({name:b.name,address:b.address,id:b.id,manager:b.manager,gw:b.gw,gc:b.gc,lat:0,lng:0,ok:false});
       fails++;
+      failList.push(b.name);
       g("fl").innerHTML+="<div>⚠ "+b.name+"</div>";
     }
     done++;up();
@@ -292,6 +294,16 @@ g("stbtn").addEventListener("click",async function(){
 function rRes(){
   var tv=sched.reduce(function(s,d){return s+d.vis.length;},0);
   g("sv1").textContent=tv;g("sv2").textContent=sched.length;g("sv3").textContent=fails;
+  // 실패 업체 목록 표시
+  if(fails>0){
+    var fl=g("fl2");
+    if(fl){
+      fl.style.display="block";
+      var fhtml="<div style='font-size:12px;color:#f85149;margin-bottom:6px;font-weight:700'>⚠ 좌표변환 실패 업체 ("+fails+"개) - 일정에서 제외됨</div>";
+      failList.forEach(function(nm){fhtml+="<div style='font-size:12px;color:#f85149;padding:3px 0;border-bottom:1px solid #21262d'>• "+nm+"</div>";});
+      fl.innerHTML=fhtml;
+    }
+  }
   var nav=g("dn");nav.innerHTML="";
   sched.forEach(function(day,idx){
     var btn=document.createElement("button");
