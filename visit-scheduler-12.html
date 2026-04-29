@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>현장점검 일정 최적화</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d1117;color:#e6edf3;font-family:-apple-system,sans-serif;font-size:14px;min-height:100vh}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hdr{background:#161b22;border-bottom:1px solid #21262d;padding:12px 16px;position:sticky;top:0;z-index:9}
+.hdr h1{font-size:15px;font-weight:700}
+.hdr p{font-size:11px;color:#7d8590;margin-top:2px}
+.wrap{padding:16px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;margin-bottom:14px}
+.slbl{font-size:10px;font-weight:700;color:#388bfd;letter-spacing:2px;margin-bottom:6px}
+.card h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.card p{font-size:13px;color:#7d8590;line-height:1.6;margin-bottom:16px}
+.ubtn{display:flex;flex-direction:column;align-items:center;gap:8px;border:2px dashed #30363d;border-radius:10px;padding:28px 16px;background:#0d1117;cursor:pointer;margin-bottom:12px;width:100%}
+.ubtn span{font-size:32px}
+.ubtn b{font-size:15px;font-weight:600}
+.ubtn small{font-size:12px;color:#7d8590}
+.lbl{display:block;font-size:12px;font-weight:600;color:#7d8590;margin-bottom:6px}
+.inp{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;color:#e6edf3;font-size:15px;outline:none;font-family:inherit;margin-bottom:12px}
+.inp:focus{border-color:#388bfd}
+.btn{display:block;width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:inherit;margin-bottom:8px;text-align:center}
+.bg{background:#238636;color:#fff}
+.bb{background:#1f6feb;color:#fff}
+.bg2{background:#21262d;color:#7d8590;border:1px solid #30363d}
+.err{background:#ff000015;border:1px solid #f8514966;border-radius:8px;padding:10px;font-size:13px;color:#f85149;margin-bottom:12px;display:none}
+.ntc{background:#0f2d1a;border:1px solid #2ea04366;border-radius:8px;padding:10px;font-size:12px;color:#7d8590;line-height:1.8;margin-bottom:14px}
+.spn{width:44px;height:44px;border:3px solid #21262d;border-top:3px solid #388bfd;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+.gc-ttl{font-size:17px;font-weight:700;text-align:center;margin-bottom:6px}
+.gc-dsc{font-size:13px;color:#7d8590;text-align:center;margin-bottom:16px}
+.pb{width:100%;height:8px;background:#21262d;border-radius:4px;overflow:hidden;margin-bottom:6px}
+.pf{height:100%;background:linear-gradient(90deg,#238636,#2ea043);border-radius:4px;transition:width .3s}
+.pt{font-size:12px;color:#7d8590;text-align:center}
+.pe{font-size:11px;color:#484f58;text-align:center;margin-top:4px}
+.fl{margin-top:10px;max-height:90px;overflow-y:auto;font-size:11px;color:#f85149}
+.sg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.sc{background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:12px 8px;text-align:center}
+.sv{font-size:20px;font-weight:900;color:#388bfd}
+.sl{font-size:11px;color:#7d8590;margin-top:2px}
+.dn{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.dn::-webkit-scrollbar{display:none}
+.dc{flex-shrink:0;background:#21262d;border:1px solid #30363d;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;white-space:nowrap;color:#7d8590;font-family:inherit}
+.dc.on{background:#1f6feb22;border-color:#388bfd;color:#388bfd;font-weight:700}
+.dtl{background:#161b22;border:1px solid #30363d;border-radius:12px;overflow:hidden}
+.dh{padding:14px 16px;background:#0d1117;border-bottom:1px solid #21262d}
+.dh h3{font-size:17px;font-weight:900}
+.dh p{font-size:12px;color:#7d8590;margin-top:3px}
+.nb{display:inline-block;background:#2d1f3d;border:1px solid #6e40c966;border-radius:20px;padding:2px 10px;font-size:11px;color:#a371f7;margin-top:6px}
+.db{padding:14px 16px}
+.sr{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #21262d}
+.sd{width:10px;height:10px;border-radius:50%;background:#388bfd;flex-shrink:0;margin-top:3px}
+.sl2{font-size:11px;color:#388bfd;font-weight:700;margin-bottom:2px}
+.sa{font-size:12px;color:#7d8590}
+.mr{display:flex;align-items:center;gap:6px;margin:6px 0}
+.ml{flex:1;height:1px;background:#21262d}
+.mt{font-size:11px;color:#484f58;white-space:nowrap}
+.lr{display:flex;gap:10px;align-items:center;background:#21262d;border-radius:8px;padding:10px 12px;margin:6px 0}
+.lt{font-size:13px;font-weight:700;color:#e3b341}
+.ls{font-size:11px;color:#7d8590;margin-left:6px}
+.vc{display:flex;gap:10px;background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:12px;margin-bottom:6px}
+.vn{width:26px;height:26px;border-radius:50%;background:#238636;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff}
+.vnm{font-size:14px;font-weight:700;margin-bottom:3px}
+.va{font-size:11px;color:#7d8590;margin-bottom:5px;line-height:1.4}
+.vt{font-size:12px;color:#2ea043;font-weight:600}
+.vm{font-size:11px;color:#7d8590;margin-left:8px}
+.hidden{display:none!important}
+#mapbox{width:100%;height:400px;border-radius:10px;overflow:hidden;margin-bottom:12px;display:none}
+.map-btns{display:flex;gap:8px;margin-bottom:12px}
+.map-btns button{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit}
+.mbtn1{background:#fee500;color:#000}
+.mbtn2{background:#03c75a;color:#fff}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>📋 현장점검 일정 최적화</h1>
+  <p>한국재정정보원 · 2026.05.04 시작 · 50km/h · 연속여정</p>
+</div>
+<div class="wrap">
+
+<div id="s1" class="card">
+  <div class="slbl">STEP 1</div>
+  <h2>업체 목록 업로드</h2>
+  <p>업체명, 주소, 담당자가 포함된 엑셀 파일을 선택하세요.</p>
+  <button class="ubtn" id="ubtn" type="button">
+    <span>📂</span><b>엑셀 파일 선택</b><small>.xlsx / .xls</small>
+  </button>
+  <input type="file" id="fi" accept=".xlsx,.xls" style="position:absolute;left:-9999px;width:1px;height:1px">
+  <div id="e1" class="err"></div>
+</div>
+
+<div id="s2" class="card hidden">
+  <div class="slbl">STEP 2</div>
+  <h2>출발지 설정</h2>
+  <div style="margin-bottom:10px;font-size:14px;color:#388bfd;font-weight:700" id="bcnt"></div>
+  <div class="ntc">🏠 <b>첫날만</b> 아래 주소에서 출발<br>🏨 <b>2일차부터</b>는 전날 마지막 업체 근처 숙박 후 출발</div>
+  <label class="lbl">첫날 출발 주소</label>
+  <input class="inp" id="sadr" placeholder="예: 전라북도 전주시 완산구 효자로 225" type="text">
+  <div id="e2" class="err"></div>
+  <button class="btn bg" id="stbtn" type="button">🚀 일정 생성 시작</button>
+  <button class="btn bg2" id="bkbtn" type="button">← 다시 업로드</button>
+</div>
+
+<div id="s3" class="card hidden">
+  <div class="spn"></div>
+  <div class="gc-ttl" id="gttl">좌표 변환 중...</div>
+  <div class="gc-dsc" id="gdsc">잠시만 기다려주세요</div>
+  <div class="pb"><div class="pf" id="pf" style="width:0%"></div></div>
+  <div class="pt" id="pt">0 / 0</div>
+  <div class="pe" id="pe"></div>
+  <div class="fl" id="fl"></div>
+</div>
+
+<div id="s4" class="hidden">
+  <div class="card" style="padding:14px">
+    <div class="sg">
+      <div class="sc"><div class="sv" id="sv1">-</div><div class="sl">방문업체</div></div>
+      <div class="sc"><div class="sv" id="sv2">-</div><div class="sl">방문일수</div></div>
+      <div class="sc"><div class="sv" id="sv3">-</div><div class="sl">변환실패</div></div>
+    </div>
+    <button class="btn bb" id="exbtn" type="button">📥 엑셀 다운로드</button>
+  </div>
+  <div id="fl2" style="background:#ff000015;border:1px solid #f8514966;border-radius:10px;padding:14px;margin-bottom:12px;display:none"></div>
+  <div class="map-btns">
+    <button class="mbtn1" id="mapbtn" type="button">🗺️ 지도에서 보기</button>
+    <button class="mbtn2" id="navbtn" type="button">🔗 네이버 지도로 열기</button>
+  </div>
+  <div id="mapbox" style="position:relative">
+    <button id="mapclose" type="button" style="display:none;position:absolute;top:8px;right:8px;z-index:999;background:#ef4444;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">✕ 지도 닫기</button>
+  </div>
+  <div class="dn" id="dn"></div>
+  <div class="dtl">
+    <div class="dh" id="dh"></div>
+    <div class="db" id="db"></div>
+  </div>
+</div>
+
+</div>
+<script>
+var SPEED=50,VMIN=60,LMIN=60,LS=720,DS=540,DE=1080;
+var SD=new Date(2026,4,4);
+var HOL={"2026-01-01":1,"2026-01-28":1,"2026-01-29":1,"2026-01-30":1,"2026-03-01":1,"2026-05-05":1,"2026-05-25":1,"2026-06-06":1,"2026-08-15":1,"2026-09-24":1,"2026-09-25":1,"2026-09-26":1,"2026-10-03":1,"2026-10-09":1,"2026-12-25":1};
+var WD=["일","월","화","수","목","금","토"];
+var raw=[],sched=[],sidx=0,sLat=35.8,sLng=127.1,sAdr="",fails=0,failList=[];
+
+function isWD(d){var w=d.getDay();return w!==0&&w!==6&&!HOL[d.toISOString().slice(0,10)];}
+function nWD(d){var n=new Date(d);n.setDate(n.getDate()+1);while(!isWD(n))n.setDate(n.getDate()+1);return n;}
+function fD(d){return (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")";}
+function fT(m){return("0"+Math.floor(m/60)).slice(-2)+":"+("0"+(m%60)).slice(-2);}
+function hav(a,b,c,e){var R=6371,dL=(c-a)*Math.PI/180,dN=(e-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)*Math.sin(dN/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function dM(km){return Math.round(km/SPEED*60);}
+function g(id){return document.getElementById(id);}
+function show(id){g(id).classList.remove("hidden");window.scrollTo(0,0);}
+function hide(id){g(id).classList.add("hidden");}
+function se(id,m){var el=g(id);el.textContent=m;el.style.display="block";}
+function he(id){g(id).style.display="none";}
+function slp(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+function bRoute(bs,la,ln){
+  var un=bs.slice(),rt=[],cla=la,cln=ln;
+  while(un.length){
+    var bi=0,bd=Infinity;
+    for(var i=0;i<un.length;i++){var d=hav(cla,cln,un[i].lat,un[i].lng);if(d<bd){bd=d;bi=i;}}
+    var nx=un.splice(bi,1)[0];rt.push(nx);cla=nx.lat;cln=nx.lng;
+  }
+  return rt;
+}
+function bDay(grp,la,ln){
+  var t=DS,ld=false,pla=la,pln=ln,its=[];
+  for(var i=0;i<grp.length;i++){
+    var b=grp[i],km=hav(pla,pln,b.lat,b.lng),dr=dM(km);
+    t+=dr;
+    if(!ld&&t>=LS){its.push({type:"lunch",start:t,end:t+LMIN});t+=LMIN;ld=true;}
+    its.push({type:"visit",biz:b,arrive:t,leave:t+VMIN,drive:dr,km:Math.round(km*10)/10});
+    t+=VMIN;pla=b.lat;pln=b.lng;
+  }
+  if(!ld)its.push({type:"lunch",start:t,end:t+LMIN});
+  return{its:its,et:t,ela:pla,eln:pln};
+}
+function cN(rem,la,ln){
+  if(!rem.length)return 0;
+  for(var n=Math.min(7,rem.length);n>=1;n--){if(bDay(rem.slice(0,n),la,ln).et<=DE)return n;}
+  return 1;
+}
+function gSch(geo,la,ln){
+  var v=geo.filter(function(b){return b.ok;});
+  if(!v.length)return [];
+  var rt=bRoute(v,la,ln),sc=[],rem=rt.slice(),cur=new Date(SD),dla=la,dln=ln,sf=0;
+  while(rem.length&&sf<500){
+    sf++;
+    while(!isWD(cur))cur=nWD(cur);
+    var n=cN(rem,dla,dln);
+    if(n<=0)break;
+    var grp=rem.splice(0,n),res=bDay(grp,dla,dln);
+    sc.push({date:new Date(cur),ds:fD(new Date(cur)),its:res.its,vis:res.its.filter(function(x){return x.type==="visit";}),et:res.et,sla:dla,sln:dln});
+    dla=res.ela;dln=res.eln;cur=nWD(cur);
+  }
+  return sc;
+}
+
+async function geoA(addr){
+  for(var i=0;i<3;i++){
+    try{
+      var url="https://visit-scheduler-bice.vercel.app/api/geocode?query="+encodeURIComponent(addr);
+      var res=await fetch(url);
+      if(!res.ok){await slp(500*(i+1));continue;}
+      var data=await res.json();
+      if(data.documents&&data.documents.length>0){
+        var d=data.documents[0];
+        var la=parseFloat(d.y||0);
+        var ln=parseFloat(d.x||0);
+        if(la&&ln)return{lat:la,lng:ln};
+      }
+    }catch(ex){if(i<2)await slp(500*(i+1));}
+  }
+  return null;
+}
+
+g("ubtn").addEventListener("click",function(){g("fi").click();});
+g("fi").addEventListener("change",function(e){
+  var f=e.target.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:"array"});
+      var sn=wb.SheetNames[0];
+      for(var i=0;i<wb.SheetNames.length;i++){if(wb.SheetNames[i].indexOf("랜덤")>=0){sn=wb.SheetNames[i];break;}}
+      // 랜덤 없으면 원본 찾기
+      if(sn===wb.SheetNames[0]){for(var i=0;i<wb.SheetNames.length;i++){if(wb.SheetNames[i].indexOf("원본")>=0){sn=wb.SheetNames[i];break;}}}
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1});
+      var hr=-1;
+      for(var i=0;i<Math.min(10,rows.length);i++){
+        var s=rows[i].map(function(c){return String(c||"");}).join("");
+        if(s.indexOf("주소")>=0&&s.indexOf("사업수행자")>=0){hr=i;break;}
+      }
+      if(hr<0){se("e1","헤더를 찾을 수 없습니다.");return;}
+      var hd=rows[hr].map(function(h){return String(h||"").trim();});
+      function gi(){var ks=[].slice.call(arguments);return hd.findIndex(function(h){return ks.some(function(k){return h.indexOf(k)>=0;});});}
+      var ni=gi("사업수행자"),ai=gi("주소"),ii=gi("내부관리번호","관리번호"),mi=gi("점검담당자","담당자"),gwi=gi("광역"),gci=gi("기초");
+      if(ai<0){se("e1","주소 컬럼 없음");return;}
+      raw=[];
+      for(var i=hr+1;i<rows.length;i++){
+        var row=rows[i];if(!row||!row.length)continue;
+        var addr=String(row[ai]||"").trim();if(!addr||addr.length<5)continue;
+        raw.push({name:ni>=0?String(row[ni]||"업체"+(raw.length+1)).trim():"업체"+(raw.length+1),address:addr,id:ii>=0?String(row[ii]||"").trim():"",manager:mi>=0?String(row[mi]||"").trim():"",gw:gwi>=0?String(row[gwi]||"").trim():"",gc:gci>=0?String(row[gci]||"").trim():""});
+      }
+      if(!raw.length){se("e1","유효한 주소 없음");return;}
+      he("e1");g("bcnt").textContent=raw.length+"개 업체 로드 완료";
+      hide("s1");show("s2");
+    }catch(er){se("e1","파일 오류: "+er.message);}
+  };
+  rd.readAsArrayBuffer(f);
+  e.target.value="";
+});
+
+g("bkbtn").addEventListener("click",function(){hide("s2");show("s1");});
+
+g("stbtn").addEventListener("click",async function(){
+  sAdr=g("sadr").value.trim();
+  if(!sAdr){se("e2","출발지 주소를 입력하세요.");return;}
+  he("e2");hide("s2");show("s3");
+  var total=raw.length+1,done=0;
+  fails=0;failList=[];var t0=Date.now();
+  g("fl").innerHTML="";
+
+  function up(){
+    var p=Math.round(done/total*100);
+    g("pf").style.width=p+"%";
+    g("pt").textContent=done+" / "+total+" · "+p+"%";
+    var el=Math.round((Date.now()-t0)/1000),rm=Math.max(0,Math.round((total-done)*1.0));
+    g("pe").textContent="경과 "+el+"초 · 약 "+rm+"초 남음";
+  }
+
+  g("gdsc").textContent=raw.length+"개 업체 주소 변환 중...";
+  var sg=await geoA(sAdr);
+  if(sg){sLat=sg.lat;sLng=sg.lng;}
+  done++;up();
+
+  var geo=[];
+  for(var i=0;i<raw.length;i++){
+    var b=raw[i],r=await geoA(b.address);
+    if(r&&r.lat&&r.lng){
+      geo.push({name:b.name,address:b.address,id:b.id,manager:b.manager,gw:b.gw,gc:b.gc,lat:r.lat,lng:r.lng,ok:true});
+    }else{
+      geo.push({name:b.name,address:b.address,id:b.id,manager:b.manager,gw:b.gw,gc:b.gc,lat:0,lng:0,ok:false});
+      fails++;
+      failList.push(b.name);
+      g("fl").innerHTML+="<div>⚠ "+b.name+"</div>";
+    }
+    done++;up();
+    await slp(100);
+  }
+
+  g("gttl").textContent="✅ 완료! 일정 생성 중...";
+  await slp(300);
+  try{
+    sched=gSch(geo,sLat,sLng);
+    if(!sched.length){g("gttl").textContent="❌ 오류";g("gdsc").textContent="유효한 업체가 없습니다.";return;}
+    rRes();hide("s3");show("s4");
+  }catch(er){g("gttl").textContent="❌ 오류: "+er.message;}
+});
+
+function rRes(){
+  var tv=sched.reduce(function(s,d){return s+d.vis.length;},0);
+  g("sv1").textContent=tv;g("sv2").textContent=sched.length;g("sv3").textContent=fails;
+  // 실패 업체 목록 표시
+  if(fails>0){
+    var fl=g("fl2");
+    if(fl){
+      fl.style.display="block";
+      var fhtml="<div style='font-size:12px;color:#f85149;margin-bottom:6px;font-weight:700'>⚠ 좌표변환 실패 업체 ("+fails+"개) - 일정에서 제외됨</div>";
+      failList.forEach(function(nm){fhtml+="<div style='font-size:12px;color:#f85149;padding:3px 0;border-bottom:1px solid #21262d'>• "+nm+"</div>";});
+      fl.innerHTML=fhtml;
+    }
+  }
+  var nav=g("dn");nav.innerHTML="";
+  sched.forEach(function(day,idx){
+    var btn=document.createElement("button");
+    btn.className="dc"+(idx===0?" on":"");
+    btn.textContent=day.ds;btn.type="button";
+    (function(i){btn.addEventListener("click",function(){sDay(i);});})(idx);
+    nav.appendChild(btn);
+  });
+  sDay(0);
+}
+
+var leafMap=null, markers=[];
+
+function showMap(idx){
+  var day=sched[idx];
+  var box=g("mapbox");
+  box.style.display="block";
+  if(!day.vis.length)return;
+
+  if(!leafMap){
+    leafMap=L.map("mapbox").setView([day.vis[0].biz.lat,day.vis[0].biz.lng],12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(leafMap);
+  }
+
+  // 기존 마커 제거
+  markers.forEach(function(m){leafMap.removeLayer(m);});
+  markers=[];
+
+  var bounds=[];
+  day.vis.forEach(function(it,i){
+    var icon=L.divIcon({
+      html:'<div style="background:#238636;color:#fff;padding:4px 8px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3)">'+(i+1)+'. '+it.biz.name+'</div>',
+      className:"",iconAnchor:[0,0]
+    });
+    var m=L.marker([it.biz.lat,it.biz.lng],{icon:icon}).addTo(leafMap);
+    m.bindPopup("<b>"+(i+1)+". "+it.biz.name+"</b><br>"+it.biz.address+"<br><span style='color:#2ea043'>"+fT(it.arrive)+"~"+fT(it.leave)+"</span>");
+    markers.push(m);
+    bounds.push([it.biz.lat,it.biz.lng]);
+  });
+
+  // 경로선 그리기
+  var line=L.polyline(bounds,{color:"#388bfd",weight:3,dashArray:"6,6"}).addTo(leafMap);
+  markers.push(line);
+  leafMap.fitBounds(bounds,{padding:[20,20]});
+  setTimeout(function(){leafMap.invalidateSize();},300);
+}
+
+function openNaver(idx){
+  var day=sched[idx];
+  if(!day.vis.length)return;
+  var first=day.vis[0],last=day.vis[day.vis.length-1];
+  // 네이버 지도 앱 스킴
+  var appUrl="nmap://route/car?slat="+first.biz.lat+"&slng="+first.biz.lng+"&sname="+encodeURIComponent(first.biz.name)+"&dlat="+last.biz.lat+"&dlng="+last.biz.lng+"&dname="+encodeURIComponent(last.biz.name)+"&appname=com.visit.scheduler";
+  // 경유지 (최대 5개)
+  if(day.vis.length>2){
+    var mid=day.vis.slice(1,Math.min(day.vis.length-1,6));
+    mid.forEach(function(it,i){
+      appUrl+="&v"+(i+1)+"lat="+it.biz.lat+"&v"+(i+1)+"lng="+it.biz.lng+"&v"+(i+1)+"name="+encodeURIComponent(it.biz.name);
+    });
+  }
+  // 앱 실행 시도, 실패시 웹으로
+  var iframe=document.createElement("iframe");
+  iframe.style.display="none";
+  iframe.src=appUrl;
+  document.body.appendChild(iframe);
+  setTimeout(function(){
+    document.body.removeChild(iframe);
+    window.location.href=appUrl;
+  },100);
+  setTimeout(function(){
+    // 앱 실행 실패시 웹으로
+    var webUrl="https://map.naver.com/v5/directions/-/-/car?c=14,0,0,0,dh&departure="+encodeURIComponent(first.biz.address)+"&destination="+encodeURIComponent(last.biz.address);
+    window.open(webUrl,"_blank");
+  },2000);
+}
+
+function sDay(idx){
+  sidx=idx;
+  var chips=document.querySelectorAll(".dc");
+  chips.forEach(function(el,i){el.classList.toggle("on",i===idx);});
+  if(chips[idx])chips[idx].scrollIntoView({inline:"center",behavior:"smooth"});
+  rDay(idx);
+}
+
+function rDay(idx){
+  var day=sched[idx],isF=(idx===0),isL=(idx===sched.length-1);
+  var pL=idx>0?sched[idx-1].vis[sched[idx-1].vis.length-1]:null;
+  var lV=day.vis[day.vis.length-1];
+  g("dh").innerHTML="<h3>"+day.ds+"</h3><p>"+day.vis.length+"개 업체 · 종료 "+fT(day.et)+"</p>"+((!isL&&lV)?"<span class='nb'>🏨 숙박: "+(lV.biz.gc||lV.biz.gw||"")+" 근처</span>":"");
+  var h="<div class='sr'><div class='sd'></div><div><div class='sl2'>"+(isF?"🏠 출발지 · 09:00":"🏨 전날 숙박지 출발 · 09:00")+"</div><div class='sa'>"+(isF?sAdr:(pL?pL.biz.name+" 근처":"-"))+"</div></div></div>";
+  var vn=1;
+  day.its.forEach(function(it){
+    if(it.type==="lunch"){
+      h+="<div class='lr'>🍱 <span class='lt'>점심시간</span><span class='ls'>"+fT(it.start)+"~"+fT(it.end)+"</span></div>";
+    }else{
+      var b=it.biz;
+      if(it.drive>0)h+="<div class='mr'><span class='ml'></span><span class='mt'>🚗 "+it.km+"km · "+it.drive+"분</span><span class='ml'></span></div>";
+      h+="<div class='vc'><div class='vn'>"+vn+"</div><div style='flex:1;min-width:0'><div class='vnm'>"+b.name+"</div><div class='va'>"+b.address+"</div><div><span class='vt'>"+fT(it.arrive)+"~"+fT(it.leave)+"</span>"+(b.manager?"<span class='vm'>· "+b.manager+"</span>":"")+"</div></div></div>";
+      vn++;
+    }
+  });
+  g("db").innerHTML=h;
+}
+
+g("mapbtn").addEventListener("click",function(){
+  showMap(sidx);
+  g("mapclose").style.display="block";
+});
+g("mapclose").addEventListener("click",function(){
+  g("mapbox").style.display="none";
+  g("mapclose").style.display="none";
+});
+g("navbtn").addEventListener("click",function(){openNaver(sidx);});
+
+g("exbtn").addEventListener("click",function(){
+  var wb=XLSX.utils.book_new();
+  var rows=[["현장점검 일정표"],["출발지: "+sAdr,"","속도: "+SPEED+"km/h","","점심: 12:00~13:00"],[],["점검일","요일","순서","시작","종료","이동(분)","거리(km)","사업수행자","광역","기초","주소","관리번호","담당자"]];
+  sched.forEach(function(day){
+    var vn=1;
+    day.its.forEach(function(it){
+      if(it.type==="lunch"){rows.push([day.ds,WD[day.date.getDay()],"-","12:00","13:00","-","-","점심시간","","","","",""]);
+      }else{var b=it.biz;rows.push([day.ds,WD[day.date.getDay()],vn,fT(it.arrive),fT(it.leave),it.drive,it.km,b.name,b.gw,b.gc,b.address,b.id,b.manager]);vn++;}
+    });
+    rows.push([]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"]=[12,4,6,7,7,8,8,20,6,8,28,14,8].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,ws,"일정표");
+  XLSX.writeFile(wb,"현장점검일정표.xlsx");
+});
+</script>
+</body>
+</html>
